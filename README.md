@@ -1,23 +1,23 @@
-# EXACT 2026 — He thong AI giai bai toan Logic & Vat ly
+# EXACT 2026 — Hệ thống AI giải bài toán Logic & Vật lý
 
-He thong Agentic AI xay dung cho cuoc thi **EXACT 2026** (lan thu 2), su dung phuong phap **Neurosymbolic Hybrid** — ket hop LLM ma nguon mo voi cac bo giai ky hieu (Z3, SymPy) de tra loi chinh xac cac cau hoi giao duc.
+Hệ thống Agentic AI xây dựng cho cuộc thi **EXACT 2026** (lần thứ 2), sử dụng phương pháp **Neurosymbolic Hybrid** — kết hợp LLM mã nguồn mở với các bộ giải ký hiệu (Z3, SymPy) để trả lời chính xác các câu hỏi giáo dục.
 
-## Muc tieu
+## Mục tiêu
 
-- Tra loi cau hoi suy luan logic (quy che dao tao) — **Type 1**
-- Giai bai toan vat ly STEM (mach dien, tu dien, luc Coulomb...) — **Type 2**
-- Cung cap loi giai thich chi tiet cho tung cau tra loi
+- Trả lời câu hỏi suy luận logic (quy chế đào tạo) — **Type 1**
+- Giải bài toán vật lý STEM (mạch điện, tụ điện, lực Coulomb...) — **Type 2**
+- Cung cấp lời giải thích chi tiết cho từng câu trả lời
 
-## Rang buoc cuoc thi
+## Ràng buộc cuộc thi
 
-- Chi duoc dung LLM ma nguon mo, toi da **8 ty tham so**
-- Cam su dung GPT, Claude, Gemini (model dong)
-- API endpoint phai tra ket qua trong toi da **60 giay**
-- Output phai co cau truc JSON (answer + explanation)
+- Chỉ được dùng LLM mã nguồn mở, tối đa **8 tỷ tham số**
+- Cấm sử dụng GPT, Claude, Gemini (model đóng)
+- API endpoint phải trả kết quả trong tối đa **60 giây**
+- Output phải có cấu trúc JSON (answer + explanation)
 
-## Cong nghe su dung
+## Công nghệ sử dụng
 
-| Thanh phan | Cong nghe |
+| Thành phần | Công nghệ |
 |---|---|
 | LLM | Qwen2.5-7B-Instruct (Fine-tuned Neurosymbolic LoRA) |
 | Quantization | BitsAndBytes 4-bit NF4 + bfloat16 |
@@ -25,61 +25,62 @@ He thong Agentic AI xay dung cho cuoc thi **EXACT 2026** (lan thu 2), su dung ph
 | Math Solver | SymPy |
 | Pipeline | LangGraph (Python Sandbox) |
 | RAG | LlamaIndex + Qdrant + BM25 Hybrid Search |
-| Embedding | BAAI/bge-m3 (Chay tren CPU) |
-| Reranker | BAAI/bge-reranker-base (Chay tren CPU) |
+| Embedding | BAAI/bge-m3 |
+| Reranker | BAAI/bge-reranker-base |
 | API | FastAPI + Uvicorn |
-| Wrapper | CustomChatWrapper (thay the LangChain ChatHuggingFace) |
+| Wrapper | CustomChatWrapper (thay thế LangChain ChatHuggingFace) |
 
-## Cau truc thu muc
+## Cấu trúc thư mục
 
 ```
 EXACT_2026/
 ├── config/
-│   ├── setting.yaml          # Cau hinh chinh (model, timeout, RAG...)
-│   └── logging.yaml          # Cau hinh logging
+│   ├── setting.yaml          # Cấu hình chính (model, timeout, RAG...)
+│   └── logging.yaml          # Cấu hình logging
 │
 ├── data/
-│   ├── raw data/             # Du lieu goc (CSV, JSON)
-│   └── official data/        # Du lieu da xu ly (JSONL cho fine-tuning)
+│   ├── EXACT2026_dataset_2026-05-15/ # Dữ liệu gốc từ BTC
+│   ├── sft_dataset/                  # Dữ liệu đã xử lý để fine-tuning
+│   └── *.pdf                         # Tài liệu quy chế, slide đào tạo
 │
 ├── src/
 │   ├── api/                  # FastAPI endpoint (POST /solve)
 │   ├── agent/                # LangGraph pipeline
-│   │   ├── nodes/            # Cac node xu ly
-│   │   ├── state.py          # Dinh nghia trang thai pipeline
-│   │   ├── graph.py          # Luong xu ly chinh
+│   │   ├── nodes/            # Các node xử lý
+│   │   ├── state.py          # Định nghĩa trạng thái pipeline
+│   │   ├── graph.py          # Luồng xử lý chính
 │   │   └── schema.py         # Pydantic schema cho request/response
-│   ├── llm/                  # Quan ly LLM (factory, provider)
+│   ├── llm/                  # Quản lý LLM (factory, provider)
 │   ├── prompt/               # Prompt templates (Z3, SymPy, Explanation...)
 │   ├── retrieval/            # RAG engine (vector_db, hybrid search)
-│   ├── sandbox/              # Chay code Z3/SymPy an toan
+│   ├── sandbox/              # Chạy code Z3/SymPy an toàn
 │   └── utils/                # Logger, output parser
 │
-├── scripts/                  # Script tien ich
-├── logs/                     # File log tu dong tao
-├── storage/                  # Vector DB (Qdrant) tu dong tao
+├── scripts/                  # Script tiện ích
+├── logs/                     # File log tự động tạo
+├── storage/                  # Vector DB (Qdrant) tự động tạo
 ├── requirements.txt
-├── solution_description.md   # Mo ta giai phap (nop bai)
+├── solution.md               # Mô tả giải pháp (nộp bài)
 └── README.md
 ```
 
-## Luong xu ly (Pipeline)
+## Luồng xử lý (Pipeline)
 
 ```
-Cau hoi JSON --> Phan loai (co premises? logic : physics)
+Câu hỏi JSON --> Phân loại (có premises? logic : physics)
                       |
           +-----------+-----------+
           |                       |
        LOGIC                   PHYSICS
           |                       |
-      Z3 Solver              RAG (tim cong thuc)
+      Z3 Solver              RAG (tìm công thức)
       (retry x1)                  |
           |                  SymPy Solver
-     Thanh cong?             (retry x1)
+     Thành công?             (retry x1)
       /       \                   |
-    Co        Khong          Thanh cong?
+    Có       Không          Thành công?
      |          |             /       \
-     |     LLM Direct       Co       Khong
+     |     LLM Direct       Có       Không
      |      (fallback)       |          |
      |          |            |     LLM Direct
      +-----+---+            +-----+----+
@@ -92,37 +93,37 @@ Cau hoi JSON --> Phan loai (co premises? logic : physics)
           {answer, explanation}
 ```
 
-**Diem noi bat (Toi uu hoa he thong):**
+**Điểm nổi bật (Tối ưu hóa hệ thống):**
 - **Neurosymbolic AI**: Ép buộc LLM không được lười biếng mà phải giải thích step-by-step (`print(Step 1...)`) cùng lúc với việc sinh code Z3/SymPy.
-- **Tu dong sua loi (Self-Correction)**: Neu Sandbox chay code loi, se tu dong nem loi do nguoc lai cho LLM de tu sua (toi da 1 lan).
-- **Trích xuat an toan**: Fallback lay log tu Sandbox hoac tu dong trich xuat comment Python lam loi giai thich.
-- **Toi uu VRAM (OOM Protection)**: He thong ep Embedding va Reranker chay hoan toan tren CPU, giu trang thai `torch.cuda.empty_cache()` lien tuc, de danh toan bo 14.56GB VRAM tren T4 GPU cho model Qwen2.5-7B.
-- **Bypass LangChain Bug**: Su dung `CustomChatWrapper` tu viet thay vi `ChatHuggingFace` de khong bi crash khi load LoRA Adapter o dinh dang 4-bit.
+- **Tự động sửa lỗi (Self-Correction)**: Nếu Sandbox chạy code lỗi, sẽ tự động ném lỗi đó ngược lại cho LLM để tự sửa (tối đa 1 lần).
+- **Trích xuất an toàn**: Fallback lấy log từ Sandbox hoặc tự động trích xuất comment Python làm lời giải thích.
+- **Tối ưu VRAM (OOM Protection)**: Hệ thống giữ trạng thái `torch.cuda.empty_cache()` liên tục, tự động dọn dẹp bộ nhớ sau mỗi lần xử lý để dành VRAM cho model Qwen2.5-7B.
+- **Bypass LangChain Bug**: Sử dụng `CustomChatWrapper` tự viết thay vì `ChatHuggingFace` để không bị crash khi load LoRA Adapter ở định dạng 4-bit.
 
 ---
 
-## Huong dan cai dat
+## Hướng dẫn cài đặt
 
-### Buoc 1: Tao moi truong Conda
+### Bước 1: Tạo môi trường Conda
 
 ```bash
 conda create -n exact-env python=3.11 -y
 conda activate exact-env
 ```
 
-### Buoc 2: Cai dat thu vien
+### Bước 2: Cài đặt thư viện
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**Luu y:**
-- Thu vien `bitsandbytes` chi ho tro GPU NVIDIA (CUDA). Tren Colab thi da co san.
-- `torch` can phien ban tuong thich voi CUDA. Xem: https://pytorch.org/get-started/locally/
+**Lưu ý:**
+- Thư viện `bitsandbytes` chỉ hỗ trợ GPU NVIDIA (CUDA). Trên Colab thì đã có sẵn.
+- `torch` cần phiên bản tương thích với CUDA. Xem: https://pytorch.org/get-started/locally/
 
-### Buoc 3: Cau hinh model (tuy chon)
+### Bước 3: Cấu hình model (tùy chọn)
 
-Mac dinh he thong se dung model Qwen2.5-7B da duoc tinh chinh (fine-tune) truc tiep cua ban. Ban co the sua repo Hugging Face chua LoRA Adapter cua ban trong file `config/setting.yaml`:
+Mặc định hệ thống sẽ dùng model Qwen2.5-7B đã được tinh chỉnh (fine-tune) trực tiếp của bạn. Bạn có thể sửa repo Hugging Face chứa LoRA Adapter của bạn trong file `config/setting.yaml`:
 
 ```yaml
 llm:
@@ -130,38 +131,137 @@ llm:
   load_in_4bit: true                                     # 4-bit quantization
 ```
 
-**Khong can tai model thu cong** — he thong tu dong tai va cache.
+**Không cần tải model thủ công** — hệ thống tự động tải và cache.
 
-### Buoc 4: Tao file .env (tuy chon)
+---
 
-```bash
-copy .env.example .env
+## Ví dụ thực tế (Đã test trên Colab)
+
+Dưới đây là 3 ví dụ thực tế đã được test độc lập trên Google Colab sử dụng hàm `run_pipeline()`.
+
+### 1. Bài toán Vật lý: Định luật 2 Newton
+```python
+import time
+from src.agent.graph import run_pipeline
+
+print("\n--- TEST PHYSICS: NEWTONS SECOND LAW ---")
+start = time.time()
+
+result = run_pipeline(
+    question="A wooden block with a mass of 5 kg is placed on a horizontal surface. A horizontal force F = 25 N is applied to pull the block. The coefficient of kinetic friction between the block and the surface is mu = 0.2. Given that the acceleration due to gravity g = 10 m/s^2, calculate the magnitude of the friction force and the resulting acceleration of the block."
+)
+
+print(f"Time: {time.time() - start:.1f}s")
+print(f"Answer: {result['answer']}")
+print(f"Solver Used: {result['solver_used']}")
+print(f"Explanation:\n{result['explanation']}")
+```
+
+**Kết quả Output:**
+```text
+Time: 47.4s
+Answer: f_k = 10.0000000000000, a = 3.00000000000000 m/s²
+Solver Used: sympy
+Explanation:
+**Chi tiết thực thi (SymPy):**
+Step 1: m = 5 kg, F = 25 N, μ = 0.2, g = 10 m/s²
+Step 2: Normal force N = m × g = 5 × 10 = g*m
+Step 3: Frictional force f_k = μ × N = 0.2 × g*m = 10.0000000000000
+Step 4: Net force along x-axis: F_net = F - f_k = 25 - 10.0000000000000 = 15.0000000000000
+Step 5: Acceleration a = F_net / m = 15.0000000000000 / 5 = 3.00000000000000
+```
+
+### 2. Bài toán Vật lý: Chuyển động ném xiên (Nâng cao)
+```python
+import time
+from src.agent.graph import run_pipeline
+
+print("\n--- TEST PHYSICS 10: PROJECTILE FULL ANALYSIS ---")
+start = time.time()
+
+result = run_pipeline(
+    question="A projectile is launched from the ground with an initial velocity of 40 m/s at an angle of 45 degrees above the horizontal. Neglecting air resistance and taking g = 9.8 m/s^2, determine: (1) the maximum height reached, (2) the total time of flight, and (3) the horizontal range."
+)
+
+print(f"Time: {time.time() - start:.1f}s")
+print(f"Answer: {result['answer']}")
+print(f"Solver Used: {result['solver_used']}")
+print(f"Explanation:\n{result['explanation']}")
+```
+
+**Kết quả Output:**
+```text
+Time: 34.6s
+Answer: 40.82 m; 5.77 s; 163.27 m
+Solver Used: sympy
+Explanation:
+**Chi tiết thực thi (SymPy):**
+Step 1: The maximum height reached is h_max = 40.82 m.
+Step 2: The total time of flight is t_total = 5.77 s.
+Step 3: The horizontal range is R = 163.27 m.
+```
+
+### 3. Bài toán Logic: Thay thế điểm GPA
+```python
+import time
+from src.agent.graph import run_pipeline
+
+print("\n--- TEST LOGIC: GRADE REPLACEMENT ---")
+start = time.time()
+
+result = run_pipeline(
+    question="Will Student D's new grade replace their old grade in the GPA calculation?",
+    premises=[
+        "According to the academic regulations, when a student retakes a course, the new grade replaces the original grade only if the new grade is higher.",
+        "Student D originally received a D in Chemistry.",
+        "Student D retook Chemistry this semester and received an F."
+    ]
+)
+
+print(f"Time: {time.time() - start:.1f}s")
+print(f"Answer: {result['answer']}")
+print(f"Solver Used: {result['solver_used']}")
+print(f"Explanation:\n{result['explanation']}")
+```
+
+**Kết quả Output:**
+```text
+Time: 37.6s
+Answer: No
+Solver Used: z3
+Explanation:
+**Lập luận (LLM):**
+The new grade (F) is not higher than the old grade (D). Therefore, according to regulation 1, the new grade will NOT replace the old grade.
+
+Formal Logic (FOL):
+  P1: ∀x∀y((RetakeCourse(x, y) ∧ NewGradeHigherThanOld(y)) → ReplaceGrade(x))
+  P2: RetakeCourse(D, Chem)
+  P3: OriginalGrade(Chem, D)
+
+**Chi tiết thực thi (Z3 Theorem Prover):**
+Step 1: Setup variables.
+Step 2: Apply logic.
+Step 3: Result -> Replaced = No
 ```
 
 ---
 
-## Huong dan chay
+## Hướng dẫn chạy API Server (Dùng cho nộp bài thi)
 
-### Cach 1: Chay API Server (dung cho nop bai thi)
+Để khởi động máy chủ API theo đúng tiêu chuẩn của cuộc thi (FastAPI + Uvicorn), bạn hãy thực hiện các bước sau:
 
+**Bước 1: Chạy Server**
 ```bash
-conda activate exact-env
+# Đảm bảo bạn đang ở thư mục EXACT_2026 và đã kích hoạt môi trường
 uvicorn src.api.main:app --host 0.0.0.0 --port 8000
 ```
+*Lần đầu tiên khởi động, Server sẽ mất vài phút để load các Model (LLM, Embedding) vào VRAM.*
 
-Lan dau chay se mat vai phut de tai model. Cac lan sau se nhanh hon (dung cache).
-
-Kiem tra trang thai:
-```bash
-curl http://localhost:8000/health
-```
-
-### Cach 2: Goi API bang Python
-
+**Bước 2: Gửi Request (Test API)**
+Mở một Terminal khác hoặc dùng Python để bắn Request:
 ```python
 import requests
 
-# Bai toan Logic (Type 1)
 response = requests.post("http://localhost:8000/solve", json={
     "question": "Is Socrates mortal?",
     "premises": [
@@ -170,105 +270,106 @@ response = requests.post("http://localhost:8000/solve", json={
     ]
 })
 print(response.json())
-
-# Bai toan Vat ly (Type 2)
-response = requests.post("http://localhost:8000/solve", json={
-    "question": "A capacitor has capacitance C = 100 uF and voltage U = 30 V. Calculate the energy of the capacitor in Joules."
-})
-print(response.json())
 ```
-
-### Cach 3: Goi pipeline truc tiep (khong qua API)
-
-```python
-from src.agent.graph import run_pipeline
-
-result = run_pipeline(
-    question="Is Socrates mortal?",
-    premises=["All men are mortal.", "Socrates is a man."]
-)
-print(result)
-```
-
-### Cach 4: Che do Mock (test offline, khong can model)
-
-```bash
-# Windows PowerShell
-$env:USE_MOCK_LLM="true"
-uvicorn src.api.main:app --port 8000
-```
-
----
-
-## Cau hinh
-
-Toan bo cau hinh nam trong file `config/setting.yaml`:
-
-| Tham so | Mo ta | Gia tri mac dinh |
-|---|---|---|
-| `llm.model_id` | Model ID tren HuggingFace | `platypus123/EXACT-Qwen-Z3-Merged-V100` |
-| `llm.temperature` | Nhiet do sinh text (0 = deterministic) | `0.0` |
-| `llm.max_new_tokens` | So token toi da LLM sinh ra | `1024` |
-| `llm.load_in_4bit` | Bat 4-bit quantization | `true` |
-| `pipeline.global_timeout` | Timeout tong cho pipeline (giay) | `120` |
-| `pipeline.solver_timeout` | Timeout cho moi lan chay solver | `10` |
-| `pipeline.max_retry` | So lan retry khi solver loi | `1` |
-| `retrieval.top_k` | So candidates ban dau cho RAG | `10` |
-| `retrieval.rerank_top_n` | So ket qua sau rerank | `3` |
-
----
 
 ## API Reference
 
-### POST /solve
-
+### POST `/solve`
 **Request:**
 ```json
 {
-    "question": "Is Socrates mortal?",
-    "premises": ["All men are mortal.", "Socrates is a man."],
-    "type": "logic"
+    "question": "Nội dung câu hỏi Vật lý hoặc Logic...",
+    "premises": ["Giả thiết 1", "Giả thiết 2"], 
+    "type": "logic" 
 }
 ```
-
-`premises` va `type` la tuy chon.
+*(Lưu ý: `premises` và `type` là tùy chọn, hệ thống có thể tự động nhận diện).*
 
 **Response:**
 ```json
 {
-    "answer": "Yes",
-    "explanation": "Based on the premises, since all men are mortal and Socrates is a man, Socrates must be mortal.",
-    "confidence": 0.95,
-    "task_type": "logic",
-    "solver_used": "z3"
+    "answer": "3.0 m/s²",
+    "explanation": "**Chi tiết thực thi (SymPy):**\nStep 1: Normal force...\nStep 2: Frictional force...",
+    "fol": "import sympy as sp\n...",
+    "cot": [],
+    "premises": [],
+    "confidence": 1.0,
+    "task_type": "physics",
+    "solver_used": "sympy"
 }
 ```
 
-### GET /health
-
-```json
-{
-    "status": "ok",
-    "project": "EXACT 2026",
-    "version": "2.0.0"
-}
+### GET `/health`
+Kiểm tra trạng thái server:
+```bash
+curl http://localhost:8000/health
 ```
 
 ---
 
-## Chay tren Google Colab
+## Cấu hình
 
-1. Upload folder `EXACT_2026/` len Colab (hoac clone tu GitHub)
-2. Chay `pip install -r requirements.txt`
-3. Chay pipeline — model tu dong tai, khong can thao tac gi them
+Toàn bộ cấu hình nằm trong file `config/setting.yaml`:
+
+| Tham số | Mô tả | Giá trị mặc định |
+|---|---|---|
+| `llm.model_id` | Model ID trên HuggingFace | `platypus123/Qwen-Z3-Merged-BTAM17026` |
+| `llm.temperature` | Nhiệt độ sinh text (0 = deterministic) | `0.0` |
+| `llm.max_new_tokens` | Số token tối đa LLM sinh ra | `1024` |
+| `llm.load_in_4bit` | Bật 4-bit quantization | `true` |
+| `pipeline.global_timeout` | Timeout tổng cho pipeline (giây) | `120` |
+| `pipeline.solver_timeout` | Timeout cho mỗi lần chạy solver | `10` |
+| `pipeline.max_retry` | Số lần retry khi solver lỗi | `1` |
+| `retrieval.top_k` | Số candidates ban đầu cho RAG | `10` |
+| `retrieval.rerank_top_n` | Số kết quả sau rerank | `3` |
 
 ---
 
-## Ghi chu
+## Hướng dẫn chạy trên Google Colab (Chi tiết)
 
-- Model tu dong tai tu HuggingFace lan dau va duoc cache lai
-- Kien thuc vat ly tu dong nap vao Vector DB lan dau chay (khong can chay script rieng)
-- Log chi tiet duoc ghi vao `logs/exact_2026.log`
-- Vector DB (Qdrant) luu tai `storage/qdrant_storage/`
-- Du lieu fine-tuning o `data/official data/` da san sang dung
-- File `solution_description.md` mo ta giai phap (nop bai thi)
+Hệ thống được thiết kế để có thể chạy mượt mà trên môi trường Google Colab miễn phí. Bạn hãy làm theo các bước sau:
+
+**Bước 1: Bật GPU trên Colab**
+- Mở Google Colab, tạo một Notebook mới.
+- Vào menu **Runtime (Thời gian chạy)** > **Change runtime type (Thay đổi loại thời gian chạy)**.
+- Chọn Hardware accelerator là **T4 GPU** (Bắt buộc để load model 7B).
+
+**Bước 2: Tải mã nguồn và cài đặt**
+Copy đoạn code sau vào một ô (cell) và chạy:
+```python
+# Clone mã nguồn từ nhánh main
+!git clone https://github.com/Platypus27-coder/EXACT_2026.git
+%cd EXACT_2026
+
+# Cài đặt các thư viện lõi
+!pip install -r requirements.txt
+```
+
+**Bước 3: Chạy test trực tiếp**
+Tạo một ô code mới và chạy thử hàm `run_pipeline`:
+```python
+import time
+from src.agent.graph import run_pipeline
+
+start = time.time()
+result = run_pipeline(
+    question="A wooden block with a mass of 5 kg is placed on a horizontal surface. A horizontal force F = 25 N is applied to pull the block. The coefficient of kinetic friction between the block and the surface is mu = 0.2. Given that the acceleration due to gravity g = 10 m/s^2, calculate the magnitude of the friction force and the resulting acceleration of the block."
+)
+
+print(f"Time: {time.time() - start:.1f}s")
+print(f"Answer: {result['answer']}")
+print(f"Explanation:\n{result['explanation']}")
+```
+
+*Lưu ý: Ở lần chạy câu hỏi đầu tiên, hệ thống sẽ mất khoảng 3 - 5 phút để tự động tải các mô hình (Qwen, BGE-M3, Reranker) từ HuggingFace về máy. Các câu hỏi sau sẽ chạy rất nhanh (khoảng 30-40 giây).*
+
+---
+
+## Ghi chú
+
+- Model tự động tải từ HuggingFace lần đầu và được cache lại
+- Kiến thức vật lý tự động nạp vào Vector DB lần đầu chạy (không cần chạy script riêng)
+- Log chi tiết được ghi vào `logs/exact_2026.log`
+- Vector DB (Qdrant) lưu tại `storage/qdrant_storage/`
+- Dữ liệu fine-tuning ở `data/sft_dataset/` đã sẵn sàng dùng
+- File `solution.md` mô tả giải pháp (nộp bài thi)
