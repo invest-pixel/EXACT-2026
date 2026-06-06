@@ -25,9 +25,22 @@ from src.utils.logger import logger
 async def lifespan(app: FastAPI):
     """Khởi tạo resources khi server bắt đầu."""
     logger.info(f"Starting {settings.app.project_name} v{settings.app.version}")
-    # Pre-compile graph khi server start (không phải đợi request đầu tiên)
+    
+    logger.info("🔄 [1/3] Đang nạp mô hình Qwen2.5-7B (LLM) vào VRAM. Vui lòng đợi...")
+    from src.llm.factory import get_llm
+    get_llm()
+    logger.info("✅ [1/3] Nạp LLM thành công!")
+
+    logger.info("🔄 [2/3] Đang nạp mô hình RAG (Embedding & Reranker)...")
+    from src.retrieval.engine import get_retriever
+    get_retriever()
+    logger.info("✅ [2/3] Nạp mô hình RAG thành công!")
+
+    logger.info("🔄 [3/3] Đang biên dịch LangGraph Pipeline...")
     from src.agent.graph import get_graph
     get_graph()
+    logger.info("✅ [3/3] LangGraph Pipeline sẵn sàng!")
+    
     logger.info("[OK] Server ready!")
     yield
     logger.info("Server shutting down")
