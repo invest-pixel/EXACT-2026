@@ -339,7 +339,7 @@ Copy đoạn code sau vào một ô (cell) và chạy:
 ```python
 # Clone mã nguồn từ nhánh main
 !git clone https://github.com/Platypus27-coder/EXACT_2026.git
-%cd EXACT_2026
+%cd /content/EXACT_2026
 
 # Cài đặt các thư viện lõi
 !pip install -r requirements.txt
