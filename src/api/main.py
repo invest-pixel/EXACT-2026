@@ -84,7 +84,7 @@ async def solve(request: SolveRequest):
                 question=request.question,
                 premises=request.premises,
             ),
-            timeout=60.0,  # Hard timeout 60 giây
+            timeout=600.0,  # Hard timeout 60 giây
         )
 
         elapsed = time.time() - start_time
