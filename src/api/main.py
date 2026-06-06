@@ -27,13 +27,13 @@ async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.app.project_name} v{settings.app.version}")
     
     logger.info("🔄 [1/3] Đang nạp mô hình Qwen2.5-7B (LLM) vào VRAM. Vui lòng đợi...")
-    from src.llm.factory import get_llm
-    get_llm()
+    from src.llm.factory import LLMFactory
+    LLMFactory.create_client()
     logger.info("✅ [1/3] Nạp LLM thành công!")
 
     logger.info("🔄 [2/3] Đang nạp mô hình RAG (Embedding & Reranker)...")
-    from src.retrieval.engine import get_retriever
-    get_retriever()
+    from src.retrieval.engine import Retriever
+    Retriever()
     logger.info("✅ [2/3] Nạp mô hình RAG thành công!")
 
     logger.info("🔄 [3/3] Đang biên dịch LangGraph Pipeline...")
